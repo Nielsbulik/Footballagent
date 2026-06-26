@@ -35,6 +35,7 @@ export default function FootballAgent() {
   const [probB, setProbB] = useState(null);
   const [probN, setProbN] = useState(null);
   const [scorers, setScorers] = useState([]);
+  const [verdict, setVerdict] = useState(null);
 
   const extractProbs = (text) => {
     // On ignore le bloc buteurs pour ne pas confondre les pourcentages
@@ -63,6 +64,21 @@ export default function FootballAgent() {
       .sort((a, b) => b.pct - a.pct);
   };
 
+  const extractVerdict = (text) => {
+    const match = text.match(/\[BILAN\]([\s\S]*?)\[\/BILAN\]/);
+    if (!match) return null;
+    const v = { favori: "", score: "", confiance: "" };
+    match[1].split("\n").forEach(l => {
+      const parts = l.split("|").map(p => p.trim());
+      if (parts.length < 2) return;
+      const key = parts[0].toLowerCase();
+      if (key.startsWith("favori")) v.favori = parts[1];
+      else if (key.startsWith("score")) v.score = parts[1];
+      else if (key.startsWith("confiance")) v.confiance = parts[1];
+    });
+    return v.favori ? v : null;
+  };
+
   const runAgent = async () => {
     const a = teamA.trim(), b = teamB.trim();
     if (!a || !b) {
@@ -78,6 +94,7 @@ export default function FootballAgent() {
     setError(null);
     setProbA(null); setProbB(null); setProbN(null);
     setScorers([]);
+    setVerdict(null);
 
     try {
       // On appelle NOTRE backend, qui détient la clé API en sécurité.
@@ -109,10 +126,14 @@ export default function FootballAgent() {
         throw new Error("Réponse vide reçue");
       }
 
-      const cleanText = fullText.replace(/\[BUTEURS\][\s\S]*?\[\/BUTEURS\]/g, "").trim();
+      const cleanText = fullText
+        .replace(/\[BUTEURS\][\s\S]*?\[\/BUTEURS\]/g, "")
+        .replace(/\[BILAN\][\s\S]*?\[\/BILAN\]/g, "")
+        .trim();
       setAnalysis(cleanText);
       extractProbs(fullText);
       setScorers(extractScorers(fullText));
+      setVerdict(extractVerdict(fullText));
     } catch (e) {
       setError("Erreur : " + e.message);
     } finally {
@@ -218,6 +239,45 @@ export default function FootballAgent() {
           <div style={{fontSize:"2rem", marginBottom:"0.8rem", animation:"spin 1s linear infinite", display:"inline-block"}}>⚽</div>
           <div style={{color:"#546e7a", fontSize:"0.85rem"}}>L'agent analyse les équipes, les stats et les tendances...</div>
           <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+        </div>
+      )}
+
+      {/* BILAN FINAL — encadré résumé */}
+      {verdict && (
+        <div style={{
+          background: "linear-gradient(135deg, #0d2818, #0a1f12)",
+          border: "2px solid #00e676",
+          borderRadius: "16px",
+          padding: "1.4rem",
+          marginBottom: "1rem",
+          boxShadow: "0 0 24px rgba(0,230,118,0.15)"
+        }}>
+          <div style={{fontSize:"0.7rem", color:"#69f0ae", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:"1rem", textAlign:"center", fontWeight:700}}>
+            🏆 Bilan final
+          </div>
+
+          <div style={{textAlign:"center", marginBottom:"1.2rem"}}>
+            <div style={{fontSize:"0.72rem", color:"#546e7a", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.3rem"}}>
+              {verdict.favori.toLowerCase().includes("nul") ? "Résultat probable" : "Vainqueur probable"}
+            </div>
+            <div style={{fontSize:"1.5rem", fontWeight:800, color:"#00e676", lineHeight:1.2}}>
+              {verdict.favori}
+            </div>
+          </div>
+
+          <div style={{display:"flex", gap:"0.8rem"}}>
+            <div style={{flex:1, background:"#081610", borderRadius:"10px", padding:"0.9rem", textAlign:"center"}}>
+              <div style={{fontSize:"0.68rem", color:"#546e7a", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:"0.35rem"}}>Score probable</div>
+              <div style={{fontSize:"1.4rem", fontWeight:800, color:"#e0e0e0", letterSpacing:"0.05em"}}>{verdict.score || "—"}</div>
+            </div>
+            <div style={{flex:1, background:"#081610", borderRadius:"10px", padding:"0.9rem", textAlign:"center"}}>
+              <div style={{fontSize:"0.68rem", color:"#546e7a", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:"0.35rem"}}>Confiance</div>
+              <div style={{fontSize:"1.1rem", fontWeight:800, marginTop:"0.15rem", color:
+                verdict.confiance.toLowerCase().includes("élev") ? "#00e676" :
+                verdict.confiance.toLowerCase().includes("moy") ? "#ffca28" : "#90a4ae"
+              }}>{verdict.confiance || "—"}</div>
+            </div>
+          </div>
         </div>
       )}
 
