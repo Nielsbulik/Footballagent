@@ -22,8 +22,15 @@ Nom du joueur | Équipe | XX%
 [/BUTEURS]
 Base ces probabilités sur la forme, le rôle (attaquant/tireur de penalty), et la qualité défensive adverse.
 
+7. **BILAN** : termine par un bloc structuré résumant le pronostic, encadré par les balises, dans ce format EXACT :
+[BILAN]
+Favori | Nom de l'équipe favorite (ou "Match nul" si trop serré)
+Score | X-Y
+Confiance | Faible OU Moyenne OU Élevée
+[/BILAN]
+
 Sois précis, analytique, et utilise des données réalistes. Formate bien avec des sections claires.
-Termine TOUJOURS par une section "🎯 PRONOSTIC FINAL" avec les pourcentages et score prédit, suivie du bloc [BUTEURS].`;
+Termine TOUJOURS par une section "🎯 PRONOSTIC FINAL" avec les pourcentages et score prédit, suivie du bloc [BUTEURS], puis du bloc [BILAN].`;
 
 export default async function handler(req, res) {
   // CORS — autorise ton frontend à appeler cette route
